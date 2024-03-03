@@ -55,11 +55,15 @@ class JobsController {
 
         const checkJobExists = await database.get("SELECT * FROM jobs WHERE id = (?)", [id])
 
+        const checkBenefits = await database.all("SELECT * FROM benefits WHERE job_id = (?)", [id])
+
+        console.log(checkBenefits)
+
         if (!checkJobExists) {
             throw new AppError("Essa vaga não foi encontrada!")
         }
 
-        return response.status(200).json(checkJobExists)
+        return response.status(200).json({...checkJobExists, benefits: checkBenefits})
     }
 
     async index(request, response) {
@@ -67,12 +71,23 @@ class JobsController {
 
         const jobs = await database.all("SELECT * FROM jobs")
 
-        console.log(jobs)
+        const jobsWithBenefits = await Promise.all(jobs.map(async (job) => {
+            try {
+                const getBenefits = await database.all("SELECT * FROM benefits WHERE job_id = (?)", [job.id])
+                return {...job, benefits: getBenefits}
+            } catch(error) {
+                console.log(error.message)
+                return {...job, benefits: []}
+            }
+        }))
+
+        console.log(jobsWithBenefits)
+        
         response.setHeader('Access-Control-Allow-Origin', '*');
         response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
         response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-        return response.status(200).json(jobs)
+        return response.status(200).json(jobsWithBenefits)
     }
 
     async update(request, response) {

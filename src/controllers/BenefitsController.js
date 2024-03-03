@@ -20,7 +20,7 @@ class BenefitsController {
 
         await database.run(`INSERT INTO benefits (name, job_id) VALUES (?, ?)`, [name, id])
 
-        return response.status(200).json({name, id})
+        return response.status(200).json({name, job_id: id})
     }
 
     async show(request, response) {
@@ -33,7 +33,7 @@ class BenefitsController {
         if (!findBenefit) {
             throw new AppError("Esse benefício não foi encontrado!")
         }
-
+ 
         return response.status(200).json(findBenefit)
     }
 
@@ -42,9 +42,24 @@ class BenefitsController {
 
         const { id } = request.params
 
-        const findBenefit = await database.all("SELECT * FROM benefits") 
+        const findBenefit = await database.all("SELECT * FROM benefits")
 
         return response.status(200).json(findBenefit)
+    }
+
+    async delete(request, response) {
+        const database = await sqliteConnection()
+
+        const { id } = request.params
+        const findBenefit = await database.get("SELECT * FROM benefits WHERE id = (?)", [id])
+
+        if (!findBenefit) {
+            throw new AppError("Esse benefício não foi encontrado.")
+        }
+
+        await database.run(`DELETE FROM benefits WHERE id = (?)`, [id])
+
+        return response.status(200).json("Excluido com sucesso!")
     }
 
 }
